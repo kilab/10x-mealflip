@@ -31,7 +31,7 @@ Użytkownicy często tracą czas na podjęcie decyzji „co na obiad”, co prow
 - Konto jest wymagane przy akcji Losuj (publiczny landing, bramka logowania na działaniu Losuj).
 - Metody logowania MVP: magic link e‑mail oraz Google. Apple w etapie późniejszym. Brak 2FA w MVP.
 - Magic link: ważność 10 minut, rate limit 3/min. Wysyłka przez dedykowany SMTP (np. Postmark/Resend) z poprawną konfiguracją DKIM/SPF.
-- Account linking: automatyczne łączenie kont po tym samym e‑mailu; brak duplikatów.
+- Account linking: automatyczne łączenie kont po tym samym e‑mailu; obsługa wszystkich aliasów (normalizacja: lowercase, usuwanie plus‑tagów i kropek w Gmailu); brak duplikatów.
 
 3.2 Filtry i preferencje
 - Filtry MVP: czas przygotowania i dieta.
@@ -42,18 +42,20 @@ Użytkownicy często tracą czas na podjęcie decyzji „co na obiad”, co prow
 3.3 Losowanie i różnorodność
 - Losowanie sterowane seedem na bazie userId + data + aktywne filtry.
 - Wykluczenia: brak powtórek z ostatnich 20 wyników per użytkownik.
-- Limit miękki 5 rerolli na sesję; komunikat po przekroczeniu.
+- Limit miękki 5 rerolli na sesję; licznik utrzymywany po stronie klienta (sessionStorage, per karta/okno); komunikat po przekroczeniu.
 - Funkcja „Ukryj na zawsze” dodaje przepis do czarnej listy użytkownika.
-- „Daily pick”: propozycja stała na 24h zgodna z filtrami użytkownika.
+- „Daily pick”: propozycja stała na 24h per użytkownik; zgodna z filtrami aktywnymi przy wygenerowaniu; nie zmienia się po zmianie filtrów w tym okresie.
 
 3.4 Widok przepisu i interakcje
 - Widok zawiera: tytuł, obraz, listę składników z miarami, instrukcje, źródło i atrybucję do TheMealDB.
-- Akcje: Reroll, Zapisz do ulubionych, Udostępnij, Ukryj na zawsze.
-- Udostępnianie: publiczna strona przepisu (SSR) z atrybucją; no-index jeśli wymagane przez licencję.
+- Fallback obrazu: placeholder przy braku lub niskiej jakości obrazu.
+- Akcje: Reroll, Potwierdź wybór, Zapisz do ulubionych, Udostępnij, Ukryj na zawsze.
+- Udostępnianie: publiczna strona przepisu (SSR) z atrybucją; no-index zawsze.
 
 3.5 Jakość wyników
 - Scoring przepisu na podstawie: kompletności pól, jakości obrazu, czasu przygotowania, liczby składników (preferencja ≤12), reputacji źródła.
 - Progi jakości: odrzucanie wyników poniżej ustalonego progu.
+- Fallback obrazu: przy braku obrazu lub niespełnieniu progu jakości ustawiany jest placeholder.
 - Feedback negatywny („To nie dla mnie”) obniża ranking dla danego użytkownika i globalnie w granicach rozsądku.
 
 3.6 PWA i offline
@@ -62,8 +64,8 @@ Użytkownicy często tracą czas na podjęcie decyzji „co na obiad”, co prow
 - Instalowalna PWA z promptem i wskaźnikiem instalacji.
 
 3.7 Analityka i obserwowalność
-- Taksonomia zdarzeń: login_success, draw_click, reroll, filter_change, save_recipe, share_click, pwa_install, api_error.
-- Własność zdarzeń: aktywne filtry oraz time_to_decision.
+- Taksonomia zdarzeń: login_success, draw_click, reroll, filter_change, confirm_choice, save_recipe, share_click, pwa_install, api_error.
+- Własność zdarzeń: aktywne filtry; time_to_decision = timestamp(confirm_choice) − timestamp(pierwszego draw_click).
 - Retencja zdarzeń: 12 miesięcy. Minimalizacja PII. Alerty błędów (Sentry) i progi SLO.
 
 3.8 Panel admina i moderacja
@@ -159,6 +161,7 @@ Ryzyka i mitigacje (wysokopoziomowo):
   - Kryteria akceptacji:
     - Licznik rerolli zmniejsza się po każdym ponowieniu.
     - Po przekroczeniu limitu pojawia się komunikat i brak dalszych rerolli.
+    - Licznik utrzymywany po stronie klienta (per karta/okno).
 
 - ID: US-008
   - Tytuł: Daily pick
@@ -166,6 +169,7 @@ Ryzyka i mitigacje (wysokopoziomowo):
   - Kryteria akceptacji:
     - Daily pick odświeża się raz dziennie na użytkownika.
     - Nie koliduje z licznikiem rerolli.
+    - Zmiana filtrów nie zmienia daily pick w obrębie 24h.
 
 - ID: US-009
   - Tytuł: Ukryj na zawsze
@@ -180,6 +184,7 @@ Ryzyka i mitigacje (wysokopoziomowo):
   - Kryteria akceptacji:
     - Widok zawiera składniki z miarami, instrukcje, obraz i źródło.
     - Atrybucja TheMealDB i link do oryginału są widoczne.
+    - Przy braku lub niskiej jakości obrazu wyświetlany jest placeholder.
 
 - ID: US-011
   - Tytuł: Zapis do ulubionych
@@ -200,7 +205,7 @@ Ryzyka i mitigacje (wysokopoziomowo):
   - Opis: Jako użytkownik chcę udostępnić publiczny link do przepisu.
   - Kryteria akceptacji:
     - Link prowadzi do SSR strony przepisu z atrybucją.
-    - Strona może mieć no-index zgodnie z wymogami licencji.
+    - Strona ma no-index.
 
 - ID: US-014
   - Tytuł: Instalacja PWA
@@ -269,7 +274,7 @@ Ryzyka i mitigacje (wysokopoziomowo):
   - Tytuł: Łączenie kont po e‑mailu
   - Opis: Jako użytkownik z kontem e‑mail chcę podłączyć Google bez duplikowania konta.
   - Kryteria akceptacji:
-    - System wykrywa ten sam e‑mail i łączy konta.
+    - System wykrywa ten sam e‑mail (z uwzględnieniem aliasów) i łączy konta.
     - W razie konfliktu oferuje bezpieczne połączenie.
 
 - ID: US-024
@@ -279,9 +284,16 @@ Ryzyka i mitigacje (wysokopoziomowo):
     - Wyświetla się komunikat z powodem i sugestią zmiany filtrów.
     - Brak dalszych rerolli w tej sesji.
 
+- ID: US-025
+  - Tytuł: Potwierdzenie wyboru
+  - Opis: Jako użytkownik chcę potwierdzić wybór przepisu, aby zakończyć decyzję.
+  - Kryteria akceptacji:
+    - Kliknięcie Potwierdź wybór rejestruje zdarzenie confirm_choice.
+    - time_to_decision liczony od pierwszego draw_click do confirm_choice.
+
 ## 6. Metryki sukcesu
 North Star:
-- Co najmniej 70% sesji kończy decyzją w czasie do 60 sekund.
+- Co najmniej 70% sesji kończy decyzją (confirm_choice) w czasie ≤ 60 s od pierwszego draw_click.
 
 Aktywacja i zaangażowanie:
 - Skuteczność logowania (aktywacja) co najmniej 75%.
@@ -303,6 +315,7 @@ Analityka i instrumentacja:
 
 Wymogi zgodności i legalne:
 - Widoczna atrybucja TheMealDB na stronach przepisu i udostępnianych stronach.
+- Publiczne strony przepisu są zawsze no-index.
 - Dostępne mechanizmy zgłaszania treści oraz eksportu/usunięcia danych.
 
 Zależności i gotowość operacyjna:
