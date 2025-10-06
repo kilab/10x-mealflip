@@ -1,0 +1,105 @@
+## 10x MealFlip – Code Review Rules (JS/TS, Astro, React, Supabase)
+
+These rules guide high-signal, pragmatic reviews focused on simplicity, maintainability, and correctness. They are stack-aware (Astro 5, React 19, TS 5, Tailwind 4, shadcn/ui, Supabase PG/Auth/Storage) and aligned with the PRD and tech stack docs.
+
+### Core Principles
+- **Simplicity over cleverness**: Prefer straightforward solutions and readable code. If a change increases complexity, ask why.
+- **Single responsibility**: Modules/functions/components do one thing well. Avoid deep nesting and large God files.
+- **Types first**: Strong TypeScript types at boundaries; avoid `any`, unsafe casts, and overuse of `as`.
+- **Fail fast with clarity**: Clear errors, no silent catches. Guard clauses over nested conditionals.
+- **Security by default**: Respect RLS in Supabase, least privilege on Storage, and safe handling of secrets.
+- **Performance within budget**: Adhere to LCP ≤ 2.5s, P95 TTI ≤ 3s, SSR p95 TTFB ≤ 500ms.
+- **Product alignment**: Verify changes support MVP scope, analytics taxonomy, and required atrybucja (TheMealDB).
+
+### Review Checklist (High Priority)
+1) Architecture and Boundaries
+- Frontend routing via Astro; SSR only where needed (authenticated/ share pages). Avoid leaking server-only code to client.
+- React islands only for interactivity; prefer Astro components for static content.
+- Clear separation of UI, state, and data fetching. No business logic in JSX markup.
+- Public vs private code paths explicit; no accidental exposure of server secrets to the client.
+
+2) TypeScript Quality
+- Public APIs and component props are explicitly typed. No `any` in exports.
+- Avoid non-null assertions (`!`) unless justified with invariant comments.
+- Use discriminated unions for UI/data states (loading | error | empty | ready).
+- Parse and validate inputs/outputs at boundaries (schema validation if applicable).
+
+3) Data and Supabase
+- Queries respect RLS; no bypass in app code. Admin tasks isolated to secure server contexts only.
+- Parameterized queries only; no string concatenation for SQL.
+- Storage: validate file types; serve images via signed/cached URLs where appropriate.
+- Rate limits adhered to in auth flows and sensitive actions (e.g., 3/min magic link).
+- Migrations keep data normalized (no JSONB for core entities per PRD).
+
+4) Security & Privacy
+- No secrets in repo, logs, or client bundles. Environment variables are server-only.
+- Minimal PII; respect GDPR actions (export/delete) paths where touched.
+- Input sanitization on user-provided content; escape output in SSR.
+- Avoid wide `*` CORS; restrict origins/methods. No open redirects.
+
+5) React & UI
+- Keep components small; extract logic to hooks or utilities. Avoid prop drilling with simple context only if needed.
+- Memoization only when measurable; avoid premature `useMemo`/`useCallback`.
+- Accessibility: keyboard focus, aria labels, color contrast, semantic markup. shadcn/ui used idiomatically.
+- Tailwind: prefer composable utility classes; avoid overly long class strings by extracting components.
+
+6) Performance
+- Image optimization (WebP), correct sizes, lazy loading of non-critical media.
+- Code-splitting for large interactive islands; defer non-critical scripts.
+- Avoid N+1 queries; batch where possible. Cache stable data with SWR-like patterns.
+- Service Worker: stale-while-revalidate for data; pre-cache shell + last recipe per PRD.
+
+7) Error Handling & Observability
+- Meaningful error messages with user-safe wording; internal details only in server logs.
+- No empty `catch`; handle or rethrow with context. Use guard clauses.
+- Instrument events per taxonomy: `login_success`, `draw_click`, `reroll`, `filter_change`, `save_recipe`, `share_click`, `pwa_install`, `api_error` (+ filters, `time_to_decision`).
+- Sentry integration for client and SSR paths where applicable.
+
+8) Tests & CI
+- Unit tests for critical logic (seeding, exclusions, reroll limit, daily pick selection).
+- Edge cases covered (e.g., empty datasets, API fallback bundle, RLS denials).
+- Lint passes; types clean on Node 20. No flaky or time-based brittle tests.
+
+### Red Flags (Blockers)
+- Introduces or relies on `any`, broad `as unknown as`, or non-null `!` without clear invariants.
+- Bypasses RLS, uses service role on client, or exposes secrets in client code.
+- Client bundles include environment-only values or SQL strings.
+- Excessive component size (>200–300 lines) or modules doing multiple unrelated things.
+- Unhandled promise rejections, empty catches, or swallowed errors.
+- Over-fetching on every render; missing key dependencies; infinite loops in effects.
+- Violates MVP scope (e.g., adding payments, complex filters, or JSONB persistence).
+
+### Supabase-Specific Checks
+- Auth flows: magic link validity (10 min), rate limit (3/min), Google linking by email without duplicates.
+- Storage: bucket policies least privilege; signed URLs when needed; CDN TTL ~7 days.
+- Schema changes: normalized tables `recipes`, `ingredients`, `recipe_ingredients`, `favorites`, `user_hidden_recipes`, `draw_history`, `attributions`; proper indexes on `diet_flags`, `prep_time_estimate`.
+
+### Randomization and Reroll Logic
+- Seed computation uses `userId + date + active filters` and is stable for daily pick.
+- Exclusions: no repeats from last 20 results per user; respect `user_hidden_recipes`.
+- Reroll: soft limit 5 per session; clear UX after limit with guidance to adjust filters.
+- Fallback content when external API unavailable; local bundle used gracefully.
+
+### Accessibility & i18n
+- Polish UI text; consistent tone; no hard-coded English strings in user-facing copy.
+- Keyboard and screen-reader accessible modals, buttons, and forms.
+- Share pages SSR: include attribution and optional `noindex` flags when required.
+
+### Reviewer Workflow (How to Review PRs)
+1. Skim PR description for intent/scope; confirm it aligns with PRD and MVP.
+2. Check types and boundaries first (public APIs, server/client separation, Supabase calls).
+3. Walk through main flows: auth, draw, reroll, save, share. Look for state bugs and data leaks.
+4. Scan for red flags. If any appear, request changes with concrete, simpler alternatives.
+5. Run locally (if applicable): confirm performance budgets and analytics events fire with correct properties.
+6. Approve only when code is simple, typed, secure, and consistent with performance budgets.
+
+### PR Quality Expectations
+- PR is small and focused; includes rationale and screenshots for UI changes.
+- Includes migration notes (if schema) and rollback strategy.
+- Mentions analytics events added/changed.
+- Clear TODOs are avoided; implement or ticket explicitly.
+
+---
+Owner: Code Review Guidelines for 10x MealFlip. Keep this document short, practical, and updated as the codebase evolves.
+
+
