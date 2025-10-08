@@ -1,3 +1,8 @@
+---
+description: UI/UX design and review guidelines for 10x MealFlip project
+globs: *.tsx,*.astro,*.css
+alwaysApply: false
+---
 ## 10x MealFlip – UI/UX Review Rules (Web App, PWA, Astro + React)
 
 Purpose: Provide high-signal review guidance for expert product/UI designers. Optimize for clarity, speed to decision, and delightful simplicity. Align decisions with PRD KPIs (time_to_decision, activation, retention) and performance budgets (LCP ≤ 2.5s, P95 TTI ≤ 3s).

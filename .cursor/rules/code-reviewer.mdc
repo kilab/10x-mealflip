@@ -1,3 +1,8 @@
+---
+description: Code review guidelines for 10x MealFlip project
+globs: *.ts,*.tsx,*.astro,*.js,*.jsx
+alwaysApply: false
+---
 ## 10x MealFlip – Code Review Rules (JS/TS, Astro, React, Supabase)
 
 These rules guide high-signal, pragmatic reviews focused on simplicity, maintainability, and correctness. They are stack-aware (Astro 5, React 19, TS 5, Tailwind 4, shadcn/ui, Supabase PG/Auth/Storage) and aligned with the PRD and tech stack docs.
