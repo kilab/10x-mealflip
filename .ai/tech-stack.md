@@ -4,7 +4,7 @@
 - Web PWA do szybkiego losowania pomysłów na obiad.
 - Hybrydowy rendering: SSG dla treści publicznych, SSR dla strefy po zalogowaniu i stron udostępnianych.
 - Wymagane konto przy akcji „Losuj” (magic link e‑mail, Google). Bez 2FA w MVP.
-- Znormalizowany model danych (bez JSONB) na PostgreSQL (Supabase).
+- Znormalizowany model danych (bez JSONB) na PostgreSQL.
 
 ### Frontend
 - Astro 5 jako warstwa kompozycji i routingu (SSG/SSR).
@@ -16,11 +16,11 @@
 - Wydajność: optymalizacja obrazów (WebP), lazy loading miniatur, docelowe wskaźniki LCP ≤ 2.5 s, P95 TTI ≤ 3 s.
 
 ### Backend i dane
-- Supabase: PostgreSQL, Auth, Storage.
-- Autentykacja: magic link e‑mail + Google OAuth; account linking po tym samym adresie e‑mail; rate‑limit 3/min; ważność linku 10 min.
-- RLS (Row Level Security) dla izolacji danych użytkowników.
-- ETL/synchronizacja: Edge Functions/cron (nocne inkrementy, snapshot startowy) do importu przepisów.
-- Przechowywanie obrazów: Supabase Storage, transkodowanie do WebP, CDN TTL 7 dni.
+- PostgreSQL jako baza danych z Drizzle ORM.
+- Autentykacja: Lucia Auth dla magic link e‑mail + Google OAuth; account linking po tym samym adresie e‑mail; rate‑limit 3/min; ważność linku 10 min.
+- RLS (Row Level Security) dla izolacji danych użytkowników implementowane w PostgreSQL.
+- ETL/synchronizacja: cron jobs (nocne inkrementy, snapshot startowy) do importu przepisów.
+- Przechowywanie obrazów: lokalne storage z transkodowaniem do WebP, CDN TTL 7 dni.
 
 ### Model danych (znormalizowany)
 - Tabele: `recipes`, `ingredients`, `recipe_ingredients`, `favorites`, `user_hidden_recipes`, `draw_history`, `attributions`.
@@ -44,13 +44,13 @@
 
 ### Obserwowalność i analityka
 - Sentry dla frontendu (przeglądarka) i SSR (serwerowe błędy i performance).
-- Analityka zdarzeń: PostHog (self‑host na DO) lub eventy w Supabase; retencja 12 miesięcy; minimalizacja PII.
+- Analityka zdarzeń: PostHog (self‑host na DO) lub eventy w PostgreSQL; retencja 12 miesięcy; minimalizacja PII.
 - Taksonomia eventów (MVP): `login_success`, `draw_click`, `reroll`, `filter_change`, `save_recipe`, `share_click`, `pwa_install`, `api_error` z `time_to_decision` i aktywnymi filtrami.
 - SLO/SLA operacyjne: dostępność 99.5%, p95 TTFB SSR ≤ 500 ms; alerty do Slack kanału operacyjnego.
 
 ### Bezpieczeństwo, prywatność, zgodność
 - RODO: minimalne PII, mechanizmy eksportu i usuwania danych, polityka prywatności/regulamin.
-- RLS w Supabase, ścisłe uprawnienia Storage i audyt akcji admina.
+- RLS w PostgreSQL, ścisłe uprawnienia Storage i audyt akcji admina.
 - Rate‑limity akcji wrażliwych (logowanie, losowanie, udostępnienia) i ochrona przed nadużyciami.
 - Atrybucja źródeł (TheMealDB) na stronach przepisu i udostępnianych.
 

@@ -22,8 +22,8 @@ A PWA that helps you decide what to cook with one click. Users can set simple fi
 - shadcn/ui
 
 ### Backend and data
-- Supabase (PostgreSQL, Auth, Storage), normalized schema only
-- Image caching in Storage; WebP; CDN TTL ~7 days
+- PostgreSQL with Drizzle ORM, Lucia Auth for authentication
+- Image caching in local storage; WebP; CDN TTL ~7 days
 
 ### Observability and analytics
 - Sentry (browser + SSR)
@@ -39,8 +39,32 @@ A PWA that helps you decide what to cook with one click. Users can set simple fi
 
 - Node.js v22.14.0 (as specified in `.nvmrc`)
 - npm
+- Docker & Docker Compose (for local development with PostgreSQL)
 
 ## Getting started
+
+### Option 1: Local development with Docker (recommended)
+
+1. Start PostgreSQL database:
+
+```bash
+docker-compose up -d postgres
+```
+
+2. Copy environment variables:
+
+```bash
+cp docker/.env.example .env
+```
+
+3. Install dependencies and run development server:
+
+```bash
+npm install
+npm run dev
+```
+
+### Option 2: Local development (without Docker)
 
 1. Install dependencies:
 
@@ -48,15 +72,11 @@ A PWA that helps you decide what to cook with one click. Users can set simple fi
 npm install
 ```
 
-2. Create a `.env` with required variables:
+2. Set up local PostgreSQL or use a cloud instance
 
-```bash
-SUPABASE_URL=...
-SUPABASE_KEY=...
-OPENROUTER_API_KEY=... # optional, if used
-```
+3. Create a `.env` with required variables (see `docker/.env.example`)
 
-3. Run the development server:
+4. Run the development server:
 
 ```bash
 npm run dev
@@ -72,6 +92,29 @@ npm run build
 
 ```bash
 npm run preview
+```
+
+## Database management (Docker)
+
+### Start database services
+```bash
+docker-compose up -d postgres
+```
+
+### Stop database services
+```bash
+docker-compose down
+```
+
+### Reset database (warning: deletes all data)
+```bash
+docker-compose down -v
+docker-compose up -d postgres
+```
+
+### View database logs
+```bash
+docker-compose logs -f postgres
 ```
 
 ## Available scripts
@@ -93,7 +136,7 @@ npm run preview
 │   │   └── api/           # API endpoints
 │   ├── middleware/
 │   │   └── index.ts       # Astro middleware
-│   ├── db/                # Supabase clients and types
+│   ├── db/                # Database clients and types (Drizzle)
 │   ├── types.ts           # Shared types (entities, DTOs)
 │   ├── components/        # UI components (Astro & React)
 │   │   └── ui/            # shadcn/ui components
@@ -119,7 +162,7 @@ npm run preview
 
 ## Security and privacy
 
-- Supabase RLS, least privilege on Storage.
+- PostgreSQL RLS, least privilege on Storage.
 - Minimal PII; GDPR export/delete mechanisms planned.
 - No secrets in client bundles; environment variables via `.env`.
 

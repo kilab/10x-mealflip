@@ -3,16 +3,16 @@ description: Code review guidelines for 10x MealFlip project
 globs: *.ts,*.tsx,*.astro,*.js,*.jsx
 alwaysApply: false
 ---
-## 10x MealFlip – Code Review Rules (JS/TS, Astro, React, Supabase)
+## 10x MealFlip – Code Review Rules (JS/TS, Astro, React, PostgreSQL + Lucia Auth)
 
-These rules guide high-signal, pragmatic reviews focused on simplicity, maintainability, and correctness. They are stack-aware (Astro 5, React 19, TS 5, Tailwind 4, shadcn/ui, Supabase PG/Auth/Storage) and aligned with the PRD and tech stack docs.
+These rules guide high-signal, pragmatic reviews focused on simplicity, maintainability, and correctness. They are stack-aware (Astro 5, React 19, TS 5, Tailwind 4, shadcn/ui, PostgreSQL + Drizzle ORM + Lucia Auth) and aligned with the PRD and tech stack docs.
 
 ### Core Principles
 - **Simplicity over cleverness**: Prefer straightforward solutions and readable code. If a change increases complexity, ask why.
 - **Single responsibility**: Modules/functions/components do one thing well. Avoid deep nesting and large God files.
 - **Types first**: Strong TypeScript types at boundaries; avoid `any`, unsafe casts, and overuse of `as`.
 - **Fail fast with clarity**: Clear errors, no silent catches. Guard clauses over nested conditionals.
-- **Security by default**: Respect RLS in Supabase, least privilege on Storage, and safe handling of secrets.
+- **Security by default**: Implement proper access control with Lucia Auth, secure database queries with Drizzle, and safe handling of secrets.
 - **Performance within budget**: Adhere to LCP ≤ 2.5s, P95 TTI ≤ 3s, SSR p95 TTFB ≤ 500ms.
 - **Product alignment**: Verify changes support MVP scope, analytics taxonomy, and required atrybucja (TheMealDB).
 
@@ -29,10 +29,10 @@ These rules guide high-signal, pragmatic reviews focused on simplicity, maintain
 - Use discriminated unions for UI/data states (loading | error | empty | ready).
 - Parse and validate inputs/outputs at boundaries (schema validation if applicable).
 
-3) Data and Supabase
-- Queries respect RLS; no bypass in app code. Admin tasks isolated to secure server contexts only.
-- Parameterized queries only; no string concatenation for SQL.
-- Storage: validate file types; serve images via signed/cached URLs where appropriate.
+3) Data and Database
+- Database queries implement proper access control; admin tasks isolated to secure server contexts only.
+- Use Drizzle ORM for all database operations; parameterized queries only; no raw SQL string concatenation.
+- Image storage: validate file types; serve images via cached URLs where appropriate.
 - Rate limits adhered to in auth flows and sensitive actions (e.g., 3/min magic link).
 - Migrations keep data normalized (no JSONB for core entities per PRD).
 
@@ -74,10 +74,11 @@ These rules guide high-signal, pragmatic reviews focused on simplicity, maintain
 - Over-fetching on every render; missing key dependencies; infinite loops in effects.
 - Violates MVP scope (e.g., adding payments, complex filters, or JSONB persistence).
 
-### Supabase-Specific Checks
+### Database-Specific Checks
 - Auth flows: magic link validity (10 min), rate limit (3/min), Google linking by email without duplicates.
-- Storage: bucket policies least privilege; signed URLs when needed; CDN TTL ~7 days.
+- Image storage: validate file types; serve images via cached URLs; CDN TTL ~7 days.
 - Schema changes: normalized tables `recipes`, `ingredients`, `recipe_ingredients`, `favorites`, `user_hidden_recipes`, `draw_history`, `attributions`; proper indexes on `diet_flags`, `prep_time_estimate`.
+- Lucia Auth: proper session management, secure password hashing, OAuth integration.
 
 ### Randomization and Reroll Logic
 - Seed computation uses `userId + date + active filters` and is stable for daily pick.
@@ -92,7 +93,7 @@ These rules guide high-signal, pragmatic reviews focused on simplicity, maintain
 
 ### Reviewer Workflow (How to Review PRs)
 1. Skim PR description for intent/scope; confirm it aligns with PRD and MVP.
-2. Check types and boundaries first (public APIs, server/client separation, Supabase calls).
+2. Check types and boundaries first (public APIs, server/client separation, database calls).
 3. Walk through main flows: auth, draw, reroll, save, share. Look for state bugs and data leaks.
 4. Scan for red flags. If any appear, request changes with concrete, simpler alternatives.
 5. Run locally (if applicable): confirm performance budgets and analytics events fire with correct properties.

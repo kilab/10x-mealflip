@@ -17,7 +17,7 @@ Zakres MVP w skrócie:
 
 Technologie i założenia (ograniczenia wykonawcze):
 - Frontend: Astro 5 + React 19, TypeScript 5, Tailwind 4, shadcn/ui.
-- Backend: Supabase (PostgreSQL, Auth, Storage). Wyłącznie znormalizowany model danych.
+- Backend: PostgreSQL + Drizzle ORM + Lucia Auth. Wyłącznie znormalizowany model danych.
 - Rendering: SSG dla treści publicznych, SSR dla strefy po zalogowaniu oraz stron udostępnianych.
 - Hosting: DigitalOcean (Docker). CI/CD: GitHub Actions (lint, test, build, skan sekretów).
 
@@ -75,7 +75,7 @@ Użytkownicy często tracą czas na podjęcie decyzji „co na obiad”, co prow
 3.9 Synchronizacja treści i źródła zewnętrzne
 - Główne źródło: TheMealDB; endpointy random/lookup. Import startowy (snapshot) i cotygodniowe inkrementy w nocy (ok. 02:00 UTC) w paczkach po ~200.
 - Deduplikacja po znormalizowanym tytule i składnikach; wersjonowanie rekordów.
-- Cache obrazów w Supabase Storage; transkodowanie do WebP; CDN TTL 7 dni.
+- Cache obrazów w lokalnym storage; transkodowanie do WebP; CDN TTL 7 dni.
 - Fallback przy niedostępności API: lokalny pakiet 50–100 przepisów.
 
 3.10 Model danych i indeksy (tylko znormalizowany)
@@ -100,7 +100,7 @@ Poza zakresem MVP:
 Ograniczenia i założenia wykonawcze:
 - Tylko środowiska dev i prod; podglądy PR dla walidacji zmian, canary 10% przed pełnym rolloutem.
 - TheMealDB jako źródło danych; atrybucja źródła i obrazów jest wymagana, możliwy upgrade do planu premium.
-- Polityka prywatności i zgodność z RODO: minimalne PII, RLS w Supabase, mechanizm eksportu i usunięcia danych.
+- Polityka prywatności i zgodność z RODO: minimalne PII, kontrola dostępu na poziomie aplikacji, mechanizm eksportu i usunięcia danych.
 - UI w języku polskim; treści TheMealDB w oryginale na MVP, tłumaczenia w późniejszym etapie.
 
 Ryzyka i mitigacje (wysokopoziomowo):

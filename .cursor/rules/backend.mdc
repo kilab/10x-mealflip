@@ -5,8 +5,8 @@ alwaysApply: false
 ---
 ### Backend and Database
 
-- Use Supabase for backend services, including authentication and database interactions.
-- Follow Supabase guidelines for security and performance.
+- Use PostgreSQL with Drizzle ORM for database interactions and Lucia Auth for authentication.
+- Follow PostgreSQL and Drizzle best practices for security and performance.
 - Use Zod schemas to validate data exchanged with the backend.
-- Use supabase from context.locals in Astro routes instead of importing supabaseClient directly
-- Use SupabaseClient type from `src/db/supabase.client.ts`, not from `@supabase/supabase-js`
+- Use database client from `src/db/client.ts` and Lucia auth from `src/lib/auth.ts`
+- Implement Row Level Security through application-level access control with Drizzle queries
